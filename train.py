@@ -2,6 +2,8 @@
 import argparse
 import torch
 from torch.utils.data import DataLoader
+import datetime
+import os
 from src import (
     process_split,
     config,
@@ -52,7 +54,7 @@ def main():
     )
 
     #Save Model
-    torch.save(model.state_dict(), config.MODEL_SAVE_PATH)
+    torch.save(model.state_dict(), os.path.join(config.MODEL_SAVE_PATH, f'siamese_model{datetime.now().strftime("%Y%m%d_%H%M%S")}.pt'))
     print("Model saved to", config.MODEL_SAVE_PATH)
 
 

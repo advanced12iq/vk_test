@@ -5,6 +5,7 @@ from src import (
     config
 )
 from tqdm import tqdm
+import torch.nn.functional as F
 
 def predict_logo(model, product_path, logos_dir, threshold=0.7, device=config.DEVICE):
     """
@@ -42,7 +43,7 @@ def predict_logo(model, product_path, logos_dir, threshold=0.7, device=config.DE
 
             with torch.no_grad():
                 output1, output2 = model(product_img, logo_img)
-                similarity = torch.sigmoid(torch.sum(torch.abs(output1 - output2))).item()
+                similarity = F.cosine_similarity(output1, output2).item()
                 similarities[logo_file] = similarity
                 max_similarity = max(max_similarity, similarity)
                 if similarity > threshold:

@@ -32,7 +32,7 @@ LEARNING_RATE = 0.001
 NUM_EPOCHS = 30
 MARGIN = 1.0
 
-MODEL_SAVE_PATH = os.path.join(BASE_DIR, 'models', f'siamese_model{datetime.now().strftime("%Y%m%d_%H%M%S")}.pt')
+MODEL_SAVE_PATH = os.path.join(BASE_DIR, 'models')
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 

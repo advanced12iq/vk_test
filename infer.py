@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import torch
+import os
 from src import (
     config,
     SiameseNetwork,
@@ -21,8 +22,7 @@ def main():
     args = parser.parse_args()
 
     # Load model
-    model = SiameseNetwork().to(config.DEVICE)
-    model.load_state_dict(torch.load(args.checkpoint))
+    model = torch.load(os.path.join(config.MODEL_SAVE_PATH, args.checkpoint), weights_only=False, map_location=config.DEVICE)
     model.eval()
 
     # Run prediction
