@@ -23,6 +23,16 @@ def process_split(annotations_path, product_images_dir, logo_images_dir, output_
                - logo_arrays_np: Массив NumPy измененных по размеру изображений логотипов.
     """
 
+    if os.path.exists(f"{output_prefix}_product_crops.npy") and os.path.exists(f"{output_prefix}_logo_images.npy"):
+        print(f"{output_prefix}_product_crops.npy file exists.")
+        print(f"{output_prefix}_logo_images.npy file exists.")
+        
+        product_crops_np = np.load(f"{output_prefix}_product_crops.npy")
+        logo_arrays_np = np.load(f"{output_prefix}_logo_images.npy")
+
+        return product_crops_np, logo_arrays_np
+    
+
     with open(annotations_path, 'r') as f:
         annotations = json.load(f)
     

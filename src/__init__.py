@@ -8,8 +8,6 @@ from .models.loss import contrastive_loss
 from .trainer import train_siamese_network
 from .predict import predict_logo
 
-# Import config items (if any)
-from .config import DATA_PATHS, HYPERPARAMS, get_transforms, set_device
 
 # Define public API
 __all__ = [
@@ -21,12 +19,7 @@ __all__ = [
     'train_siamese_network',
     'test_model',
     'predict_logo',
-    
-    # Config items
-    'DATA_PATHS',
-    'HYPERPARAMS',
-    'get_transforms',
-    'set_device'
+    'config'
 ]
 
 # Optional: Package version

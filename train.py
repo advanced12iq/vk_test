@@ -11,29 +11,14 @@ from src import (
 )
 
 def main():
-    parser = argparse.ArgumentParser(description='Train Siamese Network')
-    parser.add_argument('--train-annotations', required=True,
-                      help='Path to training annotations JSON')
-    parser.add_argument('--val-annotations', required=True,
-                      help='Path to validation annotations JSON')
-    parser.add_argument('--output-prefix', default='osld',
-                      help='Output file prefix for processed data')
-    parser.add_argument('--batch-size', type=int, default=16,
-                      help='Input batch size')
-    parser.add_argument('--epochs', type=int, default=5,
-                      help='Number of training epochs')
-    parser.add_argument('--lr', type=float, default=0.001,
-                      help='Learning rate')
-    args = parser.parse_args()
-
     # Preprocess data
     print("Preprocessing data...")
-    process_split(args.train_annotations, 
+    process_split(config.TRAIN_ANNOTATIONS_PATH, 
                  config.PRODUCT_IMAGES_DIR,
                  config.LOGO_IMAGES_DIR,
                  config.TRAIN_OUTPUT_PREFIX)
     
-    process_split(args.val_annotations,
+    process_split(config.VAL_ANNOTATIONS_PATH,
                  config.PRODUCT_IMAGES_DIR,
                  config.LOGO_IMAGES_DIR,
                  config.VAL_OUTPUT_PREFIX)
@@ -42,20 +27,18 @@ def main():
     train_dataset = LogoDataset(
         product_crops_path=config.TRAIN_OUTPUT_PREFIX + "_product_crops.npy",
         logo_images_path=config.TRAIN_OUTPUT_PREFIX + "_logo_images.npy",
-        transform_product = config.TRANSFORM_PRODUCT,
-        transform_logo = config.TRANSFORM_LOGO,
+        transform = config.TRANSFORM_PRODUCT
     )
     
     val_dataset = LogoDataset(
         product_crops_path=config.VAL_OUTPUT_PREFIX + "_product_crops.npy",
         logo_images_path=config.VAL_OUTPUT_PREFIX + "_logo_images.npy",
-        transform_product = config.TRANSFORM_PRODUCT,
-        transform_logo = config.TRANSFORM_LOGO,
+        transform = config.TRANSFORM_PRODUCT
     )
 
     # Create loaders
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=config.BATCH_SIZE, shuffle=False)
 
     # Initialize model
     model = SiameseNetwork()
