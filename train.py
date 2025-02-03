@@ -64,6 +64,7 @@ def main():
     train_siamese_network(
         model,
         train_loader,
+        val_loader,
         device=config.DEVICE,
     )
 
