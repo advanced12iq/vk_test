@@ -7,7 +7,7 @@ from src import config
 
 def train_siamese_network(model, train_loader, device=config.DEVICE):
     """
-    Arguments:
+    Args:
         model (torch.nn.Module)
         train_loader (torch.utils.data.DataLoader)
         device (str)

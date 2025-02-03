@@ -10,7 +10,7 @@ def process_split(annotations_path, product_images_dir, logo_images_dir, output_
     изменяет размеры как обрезанных изображений продуктов, так и изображений логотипов, 
     и сохраняет их в виде массивов NumPy.
 
-    Arguments:
+    Args:
         annotations_path (str): Путь к файлу JSON, содержащему аннотации.
         product_images_dir (str): Каталог, содержащий изображения продуктов.
         logo_images_dir (str): Каталог, содержащий изображения логотипов.
