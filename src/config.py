@@ -2,6 +2,7 @@
 
 import os
 import torch
+from torchvision import transforms
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  
 DATA_DIR = os.path.join(BASE_DIR, 'data')
@@ -33,3 +34,20 @@ MARGIN = 1.0
 MODEL_SAVE_PATH = os.path.join(BASE_DIR, 'models', 'siamese_model.py')
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+TRANSFORM_PRODUCT = transforms.Compose([
+    transforms.Resize(RESIZE_SIZE),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+TRANSFORM_LOGO = transforms.Compose([
+    transforms.Resize(RESIZE_SIZE),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+TRANSFORM = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
