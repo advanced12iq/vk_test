@@ -3,8 +3,8 @@
 # Import core components from each file
 from .dataset import LogoDataset
 from .process import process_split
-from models.siamese_model import SiameseNetwork
-from models.loss import contrastive_loss
+from .models.siamese_model import SiameseNetwork
+from .models.loss import contrastive_loss
 from .trainer import train_siamese_network
 from .predict import predict_logo
 

@@ -3,6 +3,7 @@
 import os
 import torch
 from torchvision import transforms
+from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  
 DATA_DIR = os.path.join(BASE_DIR, 'data')
@@ -31,7 +32,7 @@ LEARNING_RATE = 0.001
 NUM_EPOCHS = 30
 MARGIN = 1.0
 
-MODEL_SAVE_PATH = os.path.join(BASE_DIR, 'models', 'siamese_model.py')
+MODEL_SAVE_PATH = os.path.join(BASE_DIR, 'models', f'siamese_model{datetime.now().strftime("%Y%m%d_%H%M%S")}.pt')
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
