@@ -6,89 +6,93 @@ from src import (
     contrastive_loss
 )
 from sklearn.metrics import f1_score
+import torch.nn.functional as F
 
 
-def train_siamese_network(model, train_loader, val_loader, device=config.DEVICE):
+def train_siamese_network(model, 
+                          train_loader, 
+                          val_loader, 
+                          lr=config.LEARNING_RATE,
+                          batch_size=config.BATCH_SIZE,
+                          n_epochs=config.NUM_EPOCHS, 
+                          margin=config.MARGIN,
+                          device=config.DEVICE):
+
     """
-    Trains a Siamese network, computes average training and validation loss and F1 score.
+    Trains a Siamese network using vectorized operations to compute loss for the entire batch at once.
     Args:
-        model (torch.nn.Module): The Siamese network model to be trained.
-        train_loader (torch.utils.data.DataLoader): The data loader for the training dataset.
-        val_loader (torch.utils.data.DataLoader): The data loader for the validation dataset.
-        device (str, optional): Device to use for training ("cpu" or "cuda"). Defaults to config.DEVICE.
+        model (torch.nn.Module): The Siamese network model.
+        train_loader (DataLoader): DataLoader for training data.
+        val_loader (DataLoader): DataLoader for validation data.
+        device (str): Device to train on ('cpu' or 'cuda').
     """
-    model.train()
-    optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE)
-    num_epochs = config.NUM_EPOCHS
-    for epoch in range(num_epochs):
-        # Training Phase
-        running_loss = 0.0
-        all_labels = []
-        all_preds = []
-        model.train()  # Set the model to train mode
-        for batch_idx, (crop_images, logo_images) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}")):
-            optimizer.zero_grad()
-            
-            batch_size = crop_images.shape[0]
-            loss = 0
-            labels = []
-            preds = []
-            for i in range(batch_size):
-                # Positive pair
-                crop, logo = crop_images[i].to(device), logo_images[i].to(device)
-                output1, output2 = model(crop.unsqueeze(0), logo.unsqueeze(0))
-                loss += contrastive_loss(output1, output2, torch.tensor([0.], device=device))
-                labels.append(0) # positive pair
-                preds.append(1 if torch.sigmoid(torch.sum(torch.abs(output1 - output2))) > 0.5 else 0)
-                
-                #Generate negative pair from other image in batch
-                neg_idx = (i+1) % batch_size
-                neg_logo = logo_images[neg_idx].to(device)
-                output1_neg, output2_neg = model(crop.unsqueeze(0), neg_logo.unsqueeze(0))
-                loss += contrastive_loss(output1_neg, output2_neg, torch.tensor([1.], device=device))
-                labels.append(1) # negative pair
-                preds.append(1 if torch.sigmoid(torch.sum(torch.abs(output1_neg - output2_neg))) > 0.5 else 0)
 
+    model.to(device)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+    
+    for epoch in range(n_epochs):
+        model.train()
+        train_loss, total_pairs = 0.0, 0
+        all_preds, all_labels = [], []
+        
+        for crops, logos in tqdm(train_loader, desc=f"Epoch {epoch+1} Training"):
+            crops, logos = crops.to(device), logos.to(device)
+            batch_size = crops.size(0)
+            
+            neg_logos = torch.roll(logos, shifts=1, dims=0)
+            
+            inputs1 = torch.cat([crops, crops], dim=0)
+            inputs2 = torch.cat([logos, neg_logos], dim=0)
+            labels = torch.cat([torch.zeros(batch_size), torch.ones(batch_size)], dim=0).to(device)
+            
+            emb1, emb2 = model(inputs1, inputs2)
+            
+            loss = contrastive_loss(emb1, emb2, labels, margin)
+            
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            running_loss += loss.item()
-            all_labels.extend(labels)
+            
+            distances = F.cosine_similarity(emb1, emb2, dim=1)
+            preds = (distances > 0.).long().cpu().numpy()
             all_preds.extend(preds)
+            all_labels.extend(labels.cpu().numpy())
+            
+            train_loss += loss.item() * 2 * batch_size  # loss is sum, multiply by pairs
+            total_pairs += 2 * batch_size
+        
+        avg_train_loss = train_loss / total_pairs
+        train_f1 = f1_score(all_labels, all_preds, average='binary')
+        print(f"Epoch {epoch+1}, Train Loss: {avg_train_loss:.4f}, Train F1: {train_f1:.4f}")
 
-        avg_loss = running_loss / (len(train_loader) * batch_size * 2)
-        f1 = f1_score(all_labels, all_preds, average='binary')
-        print(f"Epoch {epoch+1}, Training Avg loss: {avg_loss:.4f}, Training F1 Score: {f1:.4f}")
+        model.eval()
+        val_loss, val_pairs = 0.0, 0
+        val_preds, val_labels = [], []
+        
+        with torch.no_grad():
+            for crops, logos in tqdm(val_loader, desc=f"Epoch {epoch+1} Validation"):
+                crops, logos = crops.to(device), logos.to(device)
+                batch_size = crops.size(0)
+                
+                neg_logos = torch.roll(logos, shifts=1, dims=0)
+                
+                inputs1 = torch.cat([crops, crops], dim=0)
+                inputs2 = torch.cat([logos, neg_logos], dim=0)
+                labels = torch.cat([torch.zeros(batch_size), torch.ones(batch_size)], dim=0).to(device)
+                
+                emb1, emb2 = model(inputs1, inputs2)
+                
+                loss = contrastive_loss(emb1, emb2, labels, margin)
+                distances = F.cosine_similarity(emb1, emb2, dim=1)
+                preds = (distances > 0.).long().cpu().numpy()
+                
+                val_loss += loss.item() * 2 * batch_size
+                val_pairs += 2 * batch_size
+                val_preds.extend(preds)
+                val_labels.extend(labels.cpu().numpy())
+        
+        avg_val_loss = val_loss / val_pairs
+        val_f1 = f1_score(val_labels, val_preds, average='binary')
+        print(f"Epoch {epoch+1}, Val Loss: {avg_val_loss:.4f}, Val F1: {val_f1:.4f}\n")
 
-        # Validation Phase
-        val_loss = 0.0
-        all_val_labels = []
-        all_val_preds = []
-        model.eval()  # Set the model to evaluation mode
-        with torch.no_grad():  # Disable gradient calculation during validation
-            for batch_idx, (crop_images, logo_images) in enumerate(tqdm(val_loader, desc=f"Validation {epoch+1}")):
-               batch_size = crop_images.shape[0]
-               loss = 0
-               labels = []
-               preds = []
-               for i in range(batch_size):
-                    # Positive pair
-                    crop, logo = crop_images[i].to(device), logo_images[i].to(device)
-                    output1, output2 = model(crop.unsqueeze(0), logo.unsqueeze(0))
-                    loss += contrastive_loss(output1, output2, torch.tensor([0.], device=device))
-                    labels.append(0) # positive pair
-                    preds.append(1 if torch.sigmoid(torch.sum(torch.abs(output1 - output2))) > 0.5 else 0)
-                    
-                    #Generate negative pair from other image in batch
-                    neg_idx = (i+1) % batch_size
-                    neg_logo = logo_images[neg_idx].to(device)
-                    output1_neg, output2_neg = model(crop.unsqueeze(0), neg_logo.unsqueeze(0))
-                    loss += contrastive_loss(output1_neg, output2_neg, torch.tensor([1.], device=device))
-                    labels.append(1) # negative pair
-                    preds.append(1 if torch.sigmoid(torch.sum(torch.abs(output1_neg - output2_neg))) > 0.5 else 0)
-               val_loss += loss.item()
-               all_val_labels.extend(labels)
-               all_val_preds.extend(preds)
-
-        avg_val_loss = val_loss / (len(val_loader) * batch_size * 2)
-        f1_val = f1_score(all_val_labels, all_val_preds, average='binary')
-        print(f"Epoch {epoch+1}, Validation Avg Loss: {avg_val_loss:.4f}, Validation F1 Score: {f1_val:.4f}")
+    return model

@@ -13,6 +13,18 @@ from src import (
 )
 
 def main():
+    
+    parser = argparse.ArgumentParser(description='Training model')
+    parser.add_argument('--n-epochs',type=int, default=config.NUM_EPOCHS,
+                      help='Number of training epochs')
+    parser.add_argument('--margin', type=float, default=config.MARGIN,
+                      help='Constrative loss margin')
+    parser.add_argument('--batch-size', type=int, default=config.BATCH_SIZE,
+                      help='Batch size')
+    parser.add_argument('--lr', type=float, default=config.LEARNING_RATE,
+                      help='Learning rate ')
+    args = parser.parse_args()
+
     # Preprocess data
     print("Preprocessing data...")
     process_split(config.TRAIN_ANNOTATIONS_PATH, 
@@ -39,8 +51,8 @@ def main():
     )
 
     # Create loaders
-    train_loader = DataLoader(train_dataset, batch_size=config.BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=config.BATCH_SIZE, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize model
     model = SiameseNetwork()
@@ -50,6 +62,10 @@ def main():
         model,
         train_loader,
         val_loader,
+        lr=args.lr,
+        n_epochs=args.n_epochs,
+        margin=args.margin,
+        batch_size=args.batch_size,
         device=config.DEVICE,
     )
 
